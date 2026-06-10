@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Command Center — Q2 POS Modernization</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --bg: #f9f8f6;
+    --bg2: #f1efe8;
+    --bg3: #ffffff;
+    --border: #e2e0d8;
+    --border2: #ccc9bc;
+    --text: #1a1916;
+    --text2: #5f5e5a;
+    --text3: #8a8880;
+    --radius: 8px;
+    --radius-sm: 5px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  input, select, textarea, button { font-family: inherit; font-size: 13px; color: var(--text); }
+  input, select, textarea { background: var(--bg3); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 10px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #999; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 0.5px solid var(--border); gap: 12px; flex-wrap: wrap; }
+  .topbar h1 { font-size: 17px; font-weight: 600; color: var(--text); }
+  .topbar p { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .topbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn { padding: 6px 14px; font-size: 12px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--bg3); color: var(--text); cursor: pointer; transition: background 0.1s; white-space: nowrap; }
+  .btn:hover { background: var(--bg2); }
+  .btn.primary { border-color: #999; font-weight: 500; }
+  .nav { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 20px; }
+  .nav-btn { padding: 6px 13px; font-size: 12px; border-radius: var(--radius-sm); border: 0.5px solid transparent; background: transparent; color: var(--text2); cursor: pointer; }
+  .nav-btn:hover { background: var(--bg2); color: var(--text); }
+  .nav-btn.active { background: var(--bg3); border-color: var(--border2); color: var(--text); font-weight: 500; box-shadow: var(--shadow); }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .card { background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 6px; box-shadow: var(--shadow); }
+  .card:last-child { margin-bottom: 0; }
+  .card-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-title { font-size: 13px; font-weight: 500; }
+  .card-meta { font-size: 11px; color: var(--text2); margin-top: 3px; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .b-green { background: #e8f5da; color: #3a6b10; }
+  .b-amber { background: #fef3db; color: #7a4a08; }
+  .b-red { background: #fde8e8; color: #991f1f; }
+  .b-gray { background: var(--bg2); color: var(--text2); }
+  .b-blue { background: #dbeeff; color: #1a4f8a; }
+  .b-purple { background: #eeecfe; color: #4a42b0; }
+  .b-teal { background: #d9f3eb; color: #0d6349; }
+  .phase-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 20px; }
+  .phase-chip { padding: 8px 4px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); text-align: center; cursor: pointer; background: var(--bg3); transition: border-color .15s; }
+  .phase-chip:hover { border-color: var(--border2); }
+  .phase-chip.active { border-width: 1.5px; }
+  .phase-chip .pc-icon { font-size: 15px; }
+  .phase-chip .pc-label { font-size: 10px; font-weight: 500; margin-top: 3px; color: var(--text2); }
+  .phase-chip .pc-prog { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .pbar-wrap { background: var(--bg2); border-radius: 99px; height: 3px; margin-top: 4px; overflow: hidden; }
+  .pbar { height: 3px; border-radius: 99px; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .checklist-item:last-child { border-bottom: none; }
+  .cb { width: 16px; height: 16px; border: 0.5px solid var(--border2); border-radius: 3px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: transparent; font-size: 10px; }
+  .cb.checked { background: #e8f5da; border-color: #6aaa28; color: #3a6b10; }
+  .ci-text { font-size: 13px; line-height: 1.4; }
+  .ci-text.done { text-decoration: line-through; color: var(--text3); }
+  .add-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; cursor: pointer; color: var(--text3); font-size: 12px; border: 0.5px dashed var(--border); border-radius: var(--radius-sm); background: transparent; width: 100%; margin-top: 6px; }
+  .add-row:hover { background: var(--bg2); color: var(--text); }
+  .inline-form { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px; margin-top: 6px; }
+  .inline-form input, .inline-form select, .inline-form textarea { width: 100%; margin-bottom: 6px; }
+  .inline-form .fr { display: flex; gap: 6px; }
+  .inline-form .fr input, .inline-form .fr select { flex: 1; margin-bottom: 6px; }
+  .inline-form textarea { min-height: 56px; resize: vertical; }
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+  .metric-card { background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 11px; color: var(--text2); }
+  .metric-value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .metric-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .empty { text-align: center; padding: 20px; color: var(--text3); font-size: 13px; }
+  .tab-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tab-btn { padding: 4px 10px; font-size: 11px; border-radius: 99px; border: 0.5px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; }
+  .tab-btn.active { border-color: var(--border2); color: var(--text); background: var(--bg3); font-weight: 500; }
+  .comms-row { padding: 9px 0; border-bottom: 0.5px solid var(--border); display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+  .comms-row:last-child { border-bottom: none; }
+  .note-area { width: 100%; min-height: 140px; font-size: 13px; line-height: 1.6; resize: vertical; padding: 8px 10px; }
+  /* Timeline */
+  .tl-wrap { overflow-x: auto; margin-bottom: 16px; }
+  .tl-table { min-width: 580px; width: 100%; border-collapse: collapse; }
+  .tl-label-col { font-size: 12px; color: var(--text); padding: 6px 8px 6px 0; white-space: nowrap; width: 110px; vertical-align: middle; }
+  .tl-label-sub { font-size: 10px; color: var(--text3); }
+  .tl-grid-cell { position: relative; height: 26px; vertical-align: middle; padding: 0; }
+  .tl-bg { position: absolute; inset: 0; background: var(--bg2); border-radius: 3px; }
+  .tl-bar { position: absolute; top: 5px; height: 16px; border-radius: 3px; cursor: default; }
+  .tl-dot { position: absolute; top: 8px; width: 10px; height: 10px; border-radius: 50%; transform: translateX(-5px); border: 2px solid white; }
+  .tl-today { position: absolute; top: 0; bottom: 0; width: 1.5px; background: #e24b4a; opacity: .75; pointer-events: none; }
+  .tl-row-tr { border-bottom: 0.5px solid var(--border); }
+  .tl-row-tr:last-child { border-bottom: none; }
+  .tl-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .tl-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .edit-table { width: 100%; border-collapse: collapse; }
+  .edit-table td { padding: 7px 0; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  .edit-table tr:last-child td { border-bottom: none; }
+  .edit-table input[type=date] { padding: 4px 6px; font-size: 12px; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px 4px; }
+  .del-btn:hover { color: #c0392b; }
+  @media (max-width: 600px) {
+    .metrics-row { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .phase-strip { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="root"></div>
+</div>
+<script>
+const PHASES=[
+  {id:'discovery',label:'Discovery',icon:'fa-lightbulb',color:'#534AB7',desc:'Problem definition, research, feasibility'},
+  {id:'planning',label:'Planning',icon:'fa-map',color:'#185FA5',desc:'Build doc, stories, estimates, delivery plan'},
+  {id:'development',label:'Dev',icon:'fa-code',color:'#0F6E56',desc:'Engineering execution, sprint tracking'},
+  {id:'qa',label:'QA',icon:'fa-shield-halved',color:'#854F0B',desc:'Test plans, bug triage, sign-off'},
+  {id:'pilot',label:'Pilot',icon:'fa-rocket',color:'#993556',desc:'Tranche ramp, go/no-go gates'},
+  {id:'comms',label:'Comms',icon:'fa-bullhorn',color:'#185FA5',desc:'Release notes, CS training, customer comms'},
+  {id:'retro',label:'Retro',icon:'fa-rotate',color:'#5F5E5A',desc:'Retrospective, metrics, carry-forward'},
+];
+
+const PHASE_CHECKS={
+  discovery:[
+    {id:'prob-stmt',label:'Problem statement written',group:'Problem Definition'},
+    {id:'cust-interviews',label:'Customer interviews / research completed',group:'Problem Definition'},
+    {id:'pain-quant',label:'Pain quantified (ticket volume, ARR, store count)',group:'Problem Definition'},
+    {id:'jobs',label:'Jobs-to-be-done documented',group:'Problem Definition'},
+    {id:'feasibility',label:'Engineering feasibility check completed',group:'Feasibility'},
+    {id:'competitors',label:'Competitive landscape reviewed',group:'Feasibility'},
+    {id:'scope-draft',label:'Rough scope drafted',group:'Feasibility'},
+    {id:'exec-align',label:'Executive sponsor / stakeholder alignment',group:'Alignment'},
+    {id:'prd-draft',label:'PRD or product brief drafted',group:'Alignment'},
+    {id:'go-decision',label:'Build decision made (build / buy / defer)',group:'Alignment'},
+  ],
+  planning:[
+    {id:'build-doc',label:'Build doc written and reviewed by eng lead',group:'Build Doc'},
+    {id:'epic-created',label:'Jira epic(s) created',group:'Jira'},
+    {id:'stories',label:'User stories written with acceptance criteria',group:'Jira'},
+    {id:'dor',label:'Definition of Ready passed for all stories',group:'Jira'},
+    {id:'estimates',label:'Story point estimates complete',group:'Estimation'},
+    {id:'sprint-plan',label:'Sprint plan approved by eng lead',group:'Estimation'},
+    {id:'delivery-plan',label:'Confluence delivery plan page created',group:'Documentation'},
+    {id:'metrics',label:'Success metrics and Datadog telemetry defined',group:'Documentation'},
+    {id:'deps',label:'Cross-team dependencies mapped and confirmed',group:'Dependencies'},
+    {id:'risk-reg',label:'Risk register populated',group:'Dependencies'},
+    {id:'pilot-stores',label:'Pilot store list confirmed with Ops',group:'Pilot Prep'},
+    {id:'comms-plan',label:'Comms plan drafted',group:'Comms'},
+  ],
+  development:[
+    {id:'ff',label:'Feature flag / kill switch created',group:'Engineering'},
+    {id:'branch',label:'Branch strategy confirmed',group:'Engineering'},
+    {id:'dev-started',label:'Development started',group:'Engineering'},
+    {id:'blockers',label:'Blockers tracked in Jira and escalated',group:'Execution'},
+    {id:'scope-changes',label:'Scope changes documented and approved',group:'Execution'},
+    {id:'velocity',label:'Velocity tracked; on-track vs plan confirmed',group:'Execution'},
+    {id:'datadog',label:'Datadog dashboard + alerts configured',group:'Monitoring'},
+    {id:'telemetry',label:'Telemetry smoke test passed',group:'Monitoring'},
+    {id:'code-review',label:'Code review standards met',group:'Quality'},
+    {id:'dev-done',label:'Dev complete — all stories in Done',group:'Quality'},
+  ],
+  qa:[
+    {id:'qa-plan',label:'QA test plan written',group:'Test Planning'},
+    {id:'regression',label:'Regression suite scoped',group:'Test Planning'},
+    {id:'qa-env',label:'QA environment set up and stable',group:'Test Planning'},
+    {id:'test-exec',label:'Test execution complete',group:'Execution'},
+    {id:'bugs',label:'All bugs triaged; no open Sev-1/Sev-2',group:'Execution'},
+    {id:'edge-cases',label:'Edge cases and error paths tested',group:'Execution'},
+    {id:'rollback',label:'Rollback plan tested and confirmed',group:'Sign-off'},
+    {id:'qa-signoff',label:'QA sign-off granted',group:'Sign-off'},
+    {id:'ff-verified',label:'Feature flag toggling verified in build',group:'Sign-off'},
+  ],
+  pilot:[
+    {id:'t0-list',label:'Tranche 0 store list finalized (1-3 stores)',group:'Tranche 0'},
+    {id:'t0-deploy',label:'Tranche 0 deployed',group:'Tranche 0'},
+    {id:'t0-monitor',label:'T+1 day monitoring complete — zero Sev-1s',group:'Tranche 0'},
+    {id:'t0-gonogo',label:'Go/no-go decision for Tranche 1 made',group:'Tranche 0'},
+    {id:'t1-deploy',label:'Tranche 1 deployed (~5-10% stores)',group:'Ramp'},
+    {id:'t1-gonogo',label:'Tranche 1 go/no-go passed (≥95% success)',group:'Ramp'},
+    {id:'t2-deploy',label:'Tranche 2 deployed (~25%)',group:'Ramp'},
+    {id:'t2-gonogo',label:'Tranche 2 go/no-go passed',group:'Ramp'},
+    {id:'t3-deploy',label:'Tranche 3 deployed (~50%)',group:'Ramp'},
+    {id:'ga-deploy',label:'GA — full store base deployed',group:'GA'},
+    {id:'72hr',label:'Datadog green 72hrs post-GA',group:'GA'},
+    {id:'support-vol',label:'Support ticket volume within normal bounds',group:'GA'},
+  ],
+  comms:[
+    {id:'runbook',label:'CS support runbook drafted and reviewed',group:'Internal'},
+    {id:'cs-training',label:'CS training / enablement complete',group:'Internal'},
+    {id:'int-rn',label:'Internal release notes (Confluence)',group:'Internal'},
+    {id:'slack-ann',label:'Internal Slack announcement sent',group:'Internal'},
+    {id:'ext-rn',label:'External release notes (Zendesk)',group:'External'},
+    {id:'in-app',label:'In-app messaging / product announcement',group:'External'},
+    {id:'cust-email',label:'Customer email sent',group:'External'},
+    {id:'help-center',label:'Help center / documentation updated',group:'External'},
+    {id:'marketing',label:'Marketing campaign launched',group:'External'},
+  ],
+  retro:[
+    {id:'retro-sched',label:'Retrospective meeting scheduled',group:'Retrospective'},
+    {id:'metrics-rev',label:'Success metrics reviewed vs targets',group:'Retrospective'},
+    {id:'retro-notes',label:'Retro notes and action items documented',group:'Retrospective'},
+    {id:'carry-fwd',label:'Carry-forward items identified and Jira epics created',group:'Follow-through'},
+    {id:'lessons',label:'Lessons learned documented in Confluence',group:'Follow-through'},
+    {id:'roadmap-upd',label:'Roadmap updated to reflect GA',group:'Follow-through'},
+  ],
+};
+
+const DEFAULT_TL=[
+  {id:'tl-discovery',type:'phase',phaseId:'discovery',label:'Discovery',start:'2026-03-17',end:'2026-04-04',color:'#534AB7'},
+  {id:'tl-planning',type:'phase',phaseId:'planning',label:'Planning',start:'2026-04-07',end:'2026-04-25',color:'#185FA5'},
+  {id:'tl-dev',type:'phase',phaseId:'development',label:'Dev',start:'2026-04-28',end:'2026-05-30',color:'#0F6E56'},
+  {id:'tl-qa',type:'phase',phaseId:'qa',label:'QA',start:'2026-05-26',end:'2026-06-13',color:'#854F0B'},
+  {id:'tl-pilot',type:'phase',phaseId:'pilot',label:'Pilot',start:'2026-06-10',end:'2026-06-21',color:'#993556'},
+  {id:'tl-comms',type:'phase',phaseId:'comms',label:'Comms',start:'2026-06-03',end:'2026-06-26',color:'#185FA5'},
+  {id:'tl-retro',type:'milestone',phaseId:'retro',label:'Retro',start:'2026-07-01',color:'#5F5E5A'},
+  {id:'tl-ga',type:'milestone',phaseId:'pilot',label:'GA target',start:'2026-06-26',color:'#E24B4A'},
+  {id:'tl-demo',type:'milestone',phaseId:'development',label:'Loyalty demo',start:'2026-06-17',color:'#854F0B'},
+];
+
+function dflt(){return{tab:'overview',activePhase:'development',checks:{},decisions:[],risks:[],notes:{},forms:{},notesTab:null,tl:DEFAULT_TL,addMilestone:false,nm:{label:'',type:'milestone',phaseId:'development',start:'',end:'',color:'#534AB7'}};}
+
+let S;
+try{const sv=localStorage.getItem('pmcc_v1');S=sv?{...dflt(),...JSON.parse(sv),tl:JSON.parse(sv).tl||DEFAULT_TL}:dflt();}catch(e){S=dflt();}
+
+function save(){try{localStorage.setItem('pmcc_v1',JSON.stringify({checks:S.checks,decisions:S.decisions,risks:S.risks,notes:S.notes,tl:S.tl,activePhase:S.activePhase}));}catch(e){}}
+
+function phProg(pid){const c=PHASE_CHECKS[pid]||[];if(!c.length)return 0;return Math.round(c.filter(x=>S.checks[pid+':'+x.id]).length/c.length*100);}
+function overall(){let t=0,d=0;PHASES.forEach(p=>{const c=PHASE_CHECKS[p.id]||[];t+=c.length;d+=c.filter(x=>S.checks[p.id+':'+x.id]).length;});return t?Math.round(d/t*100):0;}
+
+function render(){document.getElementById('root').innerHTML=app();bind();}
+
+function app(){return`
+<div class="topbar">
+  <div><h1>POS Q2 Command Center</h1><p>Q2 2026 · GA target Jun 26 · ${overall()}% complete</p></div>
+  <div class="topbar-actions">
+    <button class="btn">Weekly status</button>
+    <button class="btn">Q3 carry-forward</button>
+  </div>
+</div>
+<div class="nav">
+  ${['overview','timeline','lifecycle','decisions','risks','comms','notes'].map(t=>`<button class="nav-btn${S.tab===t?' active':''}" data-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+</div>
+${S.tab==='overview'?tabOverview():''}
+${S.tab==='timeline'?tabTimeline():''}
+${S.tab==='lifecycle'?tabLifecycle():''}
+${S.tab==='decisions'?tabDecisions():''}
+${S.tab==='risks'?tabRisks():''}
+${S.tab==='comms'?tabComms():''}
+${S.tab==='notes'?tabNotes():''}
+`;}
+
+function phaseStrip(clickAttr){return`<div class="phase-strip">${PHASES.map(p=>{const prog=phProg(p.id);const cur=p.id===S.activePhase;return`<div class="phase-chip${cur?' active':''}" style="${cur?`border-color:${p.color};`:''}" ${clickAttr}="${p.id}"><div class="pc-icon"><i class="fa-solid ${p.icon}" style="color:${cur?p.color:'var(--text3)'}"></i></div><div class="pc-label" style="${cur?`color:${p.color};`:''}">${p.label}</div><div class="pc-prog">${prog}%</div><div class="pbar-wrap"><div class="pbar" style="width:${prog}%;background:${p.color}"></div></div></div>`;}).join('')}</div>`;}
+
+function tlRange(){const all=S.tl.map(i=>[new Date(i.start),i.end?new Date(i.end):new Date(i.start)]).flat();let mn=new Date(Math.min(...all)),mx=new Date(Math.max(...all));mn.setDate(mn.getDate()-7);mx.setDate(mx.getDate()+14);return{mn,mx,span:(mx-mn)/(864e5)};}
+function tlPct(ds,r){return Math.max(0,Math.min(100,((new Date(ds)-r.mn)/(r.span*864e5))*100));}
+function buildTL(){
+  const r=tlRange();
+  const today=new Date();
+  const tp=tlPct(today.toISOString().slice(0,10),r);
+  const labels=[];const c=new Date(r.mn);
+  while(c<=r.mx){labels.push({l:c.toLocaleDateString('en-US',{month:'short',day:'numeric'}),p:tlPct(c.toISOString().slice(0,10),r)});c.setDate(c.getDate()+14);}
+  const rows=[...S.tl.filter(i=>i.type==='phase'),...S.tl.filter(i=>i.type==='milestone')];
+  return`<div class="tl-wrap">
+    <div style="position:relative;padding-left:110px;height:20px;margin-bottom:2px">
+      ${labels.map(m=>`<span style="position:absolute;left:calc(110px + ${m.p}%);font-size:10px;color:var(--text3);transform:translateX(-50%);white-space:nowrap">${m.l}</span>`).join('')}
+    </div>
+    <table class="tl-table" style="table-layout:fixed"><colgroup><col style="width:110px"><col></colgroup>
+    ${rows.map(item=>{
+      const sp=tlPct(item.start,r);
+      const ep=item.end?tlPct(item.end,r):sp;
+      const prog=item.phaseId?phProg(item.phaseId):0;
+      const cur=item.phaseId===S.activePhase;
+      return`<tr class="tl-row-tr">
+        <td class="tl-label-col"><div style="font-size:12px;color:${cur?item.color:'var(--text)'};font-weight:${cur?600:400}">${item.label}</div><div class="tl-label-sub">${item.start.slice(5).replace('-','/')}${item.end?'–'+item.end.slice(5).replace('-','/'):''}</div></td>
+        <td class="tl-grid-cell"><div class="tl-bg"></div>
+          ${item.type==='phase'?`<div class="tl-bar" style="left:${sp}%;width:${Math.max(1,ep-sp)}%;background:${item.color};opacity:${cur?1:.65}"><div style="height:100%;width:${prog}%;background:rgba(255,255,255,.35);border-radius:3px 0 0 3px"></div></div>`:`<div class="tl-dot" style="left:${sp}%;background:${item.color}"></div>`}
+          <div class="tl-today" style="left:${tp}%"></div>
+        </td></tr>`;
+    }).join('')}
+    </table>
+    <div class="tl-legend">
+      <div class="tl-legend-item"><div style="width:18px;height:2px;background:#e24b4a;border-radius:1px"></div>Today (${today.toLocaleDateString('en-US',{month:'short',day:'numeric'})})</div>
+      <div class="tl-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#5f5e5a;border:2px solid white;box-shadow:0 0 0 1px #ccc"></div>Milestone</div>
+      <div class="tl-legend-item"><div style="width:20px;height:10px;border-radius:2px;background:#185FA5;opacity:.65"></div>Phase (fill = % done)</div>
+    </div>
+  </div>`;}
+
+function tabOverview(){
+  const tc=PHASES.reduce((a,p)=>a+(PHASE_CHECKS[p.id]||[]).length,0);
+  const dc=PHASES.reduce((a,p)=>a+(PHASE_CHECKS[p.id]||[]).filter(x=>S.checks[p.id+':'+x.id]).length,0);
+  const hr=S.risks.filter(r=>r.severity==='high'&&!r.resolved).length;
+  const oa=S.decisions.filter(d=>d.type==='action'&&!d.closed).length;
+  return`
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">Overall</div><div class="metric-value">${overall()}%</div><div class="metric-sub">${dc}/${tc} checklist items</div></div>
+    <div class="metric-card"><div class="metric-label">Current phase</div><div class="metric-value" style="font-size:15px;padding-top:4px">${PHASES.find(p=>p.id===S.activePhase)?.label||'—'}</div><div class="metric-sub">${phProg(S.activePhase)}% complete</div></div>
+    <div class="metric-card"><div class="metric-label">High risks</div><div class="metric-value" style="color:#c0392b">${hr}</div><div class="metric-sub">${S.risks.length} total logged</div></div>
+    <div class="metric-card"><div class="metric-label">Open actions</div><div class="metric-value" style="color:#7a4a08">${oa}</div><div class="metric-sub">${S.decisions.length} items total</div></div>
+  </div>
+  <div class="section"><div class="section-title">Timeline</div>${buildTL()}</div>
+  <div class="section">${phaseStrip('data-goto-phase')}</div>
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title">Recent decisions & actions</div>
+      ${S.decisions.length===0?`<div style="font-size:12px;color:var(--text3);padding:6px 0">None logged yet</div>`:''}
+      ${S.decisions.slice(-4).reverse().map(d=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);align-items:flex-start"><span class="badge b-${d.type==='action'?'amber':d.type==='assumption'?'purple':'blue'}" style="margin-top:1px">${d.type}</span><div style="font-size:12px;flex:1">${d.text}</div></div>`).join('')}
+    </div>
+    <div class="section">
+      <div class="section-title">Active risks</div>
+      ${S.risks.filter(r=>!r.resolved).length===0?`<div style="font-size:12px;color:var(--text3);padding:6px 0">None logged yet</div>`:''}
+      ${S.risks.filter(r=>!r.resolved).slice(0,4).map(r=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);align-items:flex-start"><span class="badge b-${r.severity==='high'?'red':r.severity==='medium'?'amber':'gray'}" style="margin-top:1px">${r.severity}</span><div style="font-size:12px;flex:1">${r.text}</div></div>`).join('')}
+    </div>
+  </div>`;}
+
+function tabTimeline(){
+  return`<div class="section">
+    <div class="section-title">Initiative timeline <button class="btn" id="open-nm" style="font-size:11px">+ Add milestone</button></div>
+    ${buildTL()}
+    ${S.addMilestone?milestoneForm():''}
+  </div>
+  <div class="section">
+    <div class="section-title">Edit dates</div>
+    <div class="card" style="padding:6px 14px">
+      <table class="edit-table">
+        ${S.tl.map(item=>`<tr>
+          <td style="width:110px;font-size:12px;color:${item.color};font-weight:${item.type==='phase'?600:400}">${item.label}</td>
+          <td><input type="date" value="${item.start}" data-tl-start="${item.id}" style="width:130px"></td>
+          <td>${item.type==='phase'?`<input type="date" value="${item.end||''}" data-tl-end="${item.id}" style="width:130px">`:`<span style="font-size:11px;color:var(--text3)">milestone</span>`}</td>
+          <td><button class="del-btn" data-del-tl="${item.id}"><i class="fa-solid fa-xmark"></i></button></td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  </div>`;}
+
+function milestoneForm(){
+  const nm=S.nm;
+  return`<div class="inline-form" style="margin-top:8px">
+    <div class="fr">
+      <input id="nm-label" type="text" placeholder="Label (e.g. 'Mid-June demo')" value="${nm.label}">
+      <select id="nm-type"><option value="milestone"${nm.type==='milestone'?' selected':''}>Milestone</option><option value="phase"${nm.type==='phase'?' selected':''}>Phase bar</option></select>
+    </div>
+    <div class="fr">
+      <input id="nm-start" type="date" value="${nm.start}" placeholder="Date / Start">
+      <input id="nm-end" type="date" value="${nm.end||''}" placeholder="End (phases only)">
+    </div>
+    <div class="fr">
+      <select id="nm-phase"><option value="">No phase link</option>${PHASES.map(p=>`<option value="${p.id}"${nm.phaseId===p.id?' selected':''}>${p.label}</option>`).join('')}</select>
+      <select id="nm-color">
+        <option value="#534AB7"${nm.color==='#534AB7'?' selected':''}>Purple</option>
+        <option value="#185FA5"${nm.color==='#185FA5'?' selected':''}>Blue</option>
+        <option value="#0F6E56"${nm.color==='#0F6E56'?' selected':''}>Teal</option>
+        <option value="#854F0B"${nm.color==='#854F0B'?' selected':''}>Amber</option>
+        <option value="#E24B4A"${nm.color==='#E24B4A'?' selected':''}>Red</option>
+        <option value="#993556"${nm.color==='#993556'?' selected':''}>Pink</option>
+        <option value="#5F5E5A"${nm.color==='#5F5E5A'?' selected':''}>Gray</option>
+      </select>
+    </div>
+    <div class="fr"><button class="btn primary" id="save-nm">Add to timeline</button><button class="btn" id="cancel-nm">Cancel</button></div>
+  </div>`;}
+
+function tabLifecycle(){
+  const ph=PHASES.find(p=>p.id===S.activePhase);
+  const checks=PHASE_CHECKS[S.activePhase]||[];
+  const groups=[...new Set(checks.map(c=>c.group))];
+  return`
+  ${phaseStrip('data-sel-phase')}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <i class="fa-solid ${ph.icon}" style="font-size:20px;color:${ph.color}"></i>
+    <div><div style="font-size:16px;font-weight:600">${ph.label}</div><div style="font-size:12px;color:var(--text2)">${ph.desc}</div></div>
+    <button class="btn" data-set-phase="${ph.id}" style="margin-left:auto;font-size:11px">Mark as current</button>
+  </div>
+  ${groups.map(grp=>{
+    const items=checks.filter(c=>c.group===grp);
+    const done=items.filter(c=>S.checks[S.activePhase+':'+c.id]).length;
+    return`<div class="section"><div class="section-title"><span>${grp}</span><span style="font-weight:400">${done}/${items.length}</span></div><div class="card" style="padding:4px 14px">${items.map(c=>{const key=S.activePhase+':'+c.id;const chk=!!S.checks[key];return`<div class="checklist-item"><button class="cb${chk?' checked':''}" data-toggle="${key}">${chk?'✓':''}</button><div class="ci-text${chk?' done':''}">${c.label}</div></div>`;}).join('')}</div></div>`;
+  }).join('')}`;}
+
+function tabDecisions(){
+  const groups=[{k:'decision',l:'Decisions',b:'b-blue'},{k:'assumption',l:'Assumptions',b:'b-purple'},{k:'action',l:'Action items',b:'b-amber'}];
+  return`<div class="section">${groups.map(g=>{
+    const items=S.decisions.filter(d=>d.type===g.k);
+    return`<div style="margin-bottom:20px">
+      <div class="section-title"><span>${g.l}</span><span style="font-weight:400">${items.filter(d=>!d.closed).length} open</span></div>
+      ${items.length===0?`<div style="font-size:12px;color:var(--text3);padding:4px 0">None logged</div>`:''}
+      <div class="card" style="padding:4px 14px">
+        ${items.slice().reverse().map((d,i)=>{const ai=S.decisions.indexOf(items.slice().reverse()[i]);return`<div class="checklist-item">${g.k==='action'?`<button class="cb${d.closed?' checked':''}" data-close-dec="${ai}">${d.closed?'✓':''}</button>`:`<div style="width:16px"></div>`}<div style="flex:1"><div class="ci-text${d.closed?' done':''}">${d.text}</div><div style="font-size:11px;color:var(--text3)">${d.phase?PHASES.find(p=>p.id===d.phase)?.label||'':''} ${d.owner?'· '+d.owner:''} · ${d.date||''}</div></div><button class="del-btn" data-del-dec="${ai}"><i class="fa-solid fa-xmark"></i></button></div>`;}).join('')}
+      </div>
+      ${S.forms['add-dec-'+g.k]?`<div class="inline-form"><div class="fr"><select id="new-dec-phase-${g.k}"><option value="">All phases</option>${PHASES.map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select><input id="new-dec-owner-${g.k}" type="text" placeholder="Owner"></div><textarea id="new-dec-text-${g.k}" placeholder="${g.k==='decision'?'What was decided?':g.k==='assumption'?'What are we assuming?':'What needs to happen?'}"></textarea><div class="fr"><button class="btn primary" data-save-dec="${g.k}">Save</button><button class="btn" data-cancel-form="add-dec-${g.k}">Cancel</button></div></div>`:`<button class="add-row" data-open-form="add-dec-${g.k}"><i class="fa-solid fa-plus"></i>Add ${g.k}</button>`}
+    </div>`;
+  }).join('')}</div>`;}
+
+function tabRisks(){
+  const open=S.risks.filter(r=>!r.resolved);
+  const res=S.risks.filter(r=>r.resolved);
+  return`<div class="section">
+    <div class="section-title"><span>Risk register</span><span style="font-weight:400">${open.length} open · ${res.length} resolved</span></div>
+    ${open.length===0?`<div class="empty">No open risks.</div>`:''}
+    ${open.map(r=>{const ai=S.risks.indexOf(r);return`<div class="card"><div class="card-row"><div style="flex:1"><div class="card-title">${r.text}</div><div class="card-meta">${r.phase?PHASES.find(p=>p.id===r.phase)?.label+' · ':''} ${r.mitigation||'No mitigation logged'}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge b-${r.severity==='high'?'red':r.severity==='medium'?'amber':'gray'}">${r.severity}</span><button class="btn" style="font-size:10px;padding:2px 8px" data-resolve-risk="${ai}">Resolve</button><button class="del-btn" data-del-risk="${ai}"><i class="fa-solid fa-xmark"></i></button></div></div></div>`;}).join('')}
+    ${S.forms['add-risk']?`<div class="inline-form"><div class="fr"><select id="new-risk-phase"><option value="">All phases</option>${PHASES.map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select><select id="new-risk-sev"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div><input id="new-risk-text" type="text" placeholder="Risk description"><input id="new-risk-mit" type="text" placeholder="Mitigation / owner"><div class="fr"><button class="btn primary" id="save-risk">Save</button><button class="btn" data-cancel-form="add-risk">Cancel</button></div></div>`:`<button class="add-row" data-open-form="add-risk"><i class="fa-solid fa-plus"></i>Add a risk</button>`}
+    ${res.length>0?`<div style="margin-top:16px"><div class="section-title">Resolved</div>${res.map(r=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);opacity:.5"><span class="badge b-green">resolved</span><div style="font-size:12px">${r.text}</div></div>`).join('')}</div>`:''}
+  </div>`;}
+
+function tabComms(){
+  const CITEMS=[
+    {id:'runbook',l:'CS support runbook',aud:'Internal',phase:'qa'},
+    {id:'cs-tr',l:'CS training / enablement',aud:'Internal',phase:'pilot'},
+    {id:'int-rn',l:'Internal release notes (Confluence)',aud:'Internal',phase:'pilot'},
+    {id:'slack',l:'Internal Slack announcement',aud:'Internal',phase:'pilot'},
+    {id:'ext-rn',l:'External release notes (Zendesk)',aud:'Customer',phase:'comms'},
+    {id:'in-app',l:'In-app messaging',aud:'Customer',phase:'comms'},
+    {id:'cust-email',l:'Customer email',aud:'Customer',phase:'comms'},
+    {id:'help',l:'Help center / documentation',aud:'Customer',phase:'comms'},
+    {id:'mktg',l:'Marketing campaign',aud:'Customer',phase:'comms'},
+  ];
+  return`<div class="section">${['Internal','Customer'].map(aud=>`
+    <div style="margin-bottom:20px">
+      <div class="section-title">${aud}</div>
+      <div class="card" style="padding:4px 14px">
+        ${CITEMS.filter(c=>c.aud===aud).map(c=>{const key='comms:'+c.id;const chk=!!S.checks[key];return`<div class="comms-row"><div style="font-size:13px;${chk?'text-decoration:line-through;color:var(--text3)':''}">${c.l}</div><span class="badge b-${c.phase==='qa'?'amber':c.phase==='pilot'?'teal':'blue'}">${PHASES.find(p=>p.id===c.phase)?.label}</span><button class="cb${chk?' checked':''}" data-toggle="${key}">${chk?'✓':''}</button></div>`;}).join('')}
+      </div>
+    </div>`).join('')}
+  </div>`;}
+
+function tabNotes(){
+  const active=S.notesTab||'general';
+  const note=S.notes['note:'+active]||'';
+  const tabs=[{id:'general',l:'General'},...PHASES.map(p=>({id:p.id,l:p.label}))];
+  return`<div class="section">
+    <div class="tab-row">${tabs.map(t=>`<button class="tab-btn${active===t.id?' active':''}" data-note-tab="${t.id}">${t.l}</button>`).join('')}</div>
+    <textarea class="note-area" id="note-area" placeholder="Running notes, meeting minutes, open questions, links…">${note}</textarea>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn primary" id="save-note">Save</button>
+    </div>
+  </div>`;}
+
+function bind(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{S.tab=b.dataset.tab;render();}));
+  document.querySelectorAll('[data-sel-phase],[data-goto-phase]').forEach(b=>b.addEventListener('click',()=>{S.tab='lifecycle';S.activePhase=b.dataset.selPhase||b.dataset.gotoPhase;render();}));
+  document.querySelectorAll('[data-set-phase]').forEach(b=>b.addEventListener('click',()=>{S.activePhase=b.dataset.setPhase;save();render();}));
+  document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{S.checks[b.dataset.toggle]=!S.checks[b.dataset.toggle];save();render();}));
+  document.querySelectorAll('[data-open-form]').forEach(b=>b.addEventListener('click',()=>{S.forms[b.dataset.openForm]=true;render();}));
+  document.querySelectorAll('[data-cancel-form]').forEach(b=>b.addEventListener('click',()=>{S.forms[b.dataset.cancelForm]=false;render();}));
+  document.querySelectorAll('[data-save-dec]').forEach(b=>b.addEventListener('click',()=>{
+    const t=b.dataset.saveDec;const txt=document.getElementById('new-dec-text-'+t)?.value?.trim();if(!txt)return;
+    S.decisions.push({type:t,text:txt,phase:document.getElementById('new-dec-phase-'+t)?.value||'',owner:document.getElementById('new-dec-owner-'+t)?.value||'',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),closed:false});
+    S.forms['add-dec-'+t]=false;save();render();
+  }));
+  document.querySelectorAll('[data-del-dec]').forEach(b=>b.addEventListener('click',()=>{S.decisions.splice(+b.dataset.delDec,1);save();render();}));
+  document.querySelectorAll('[data-close-dec]').forEach(b=>b.addEventListener('click',()=>{S.decisions[+b.dataset.closeDec].closed=!S.decisions[+b.dataset.closeDec].closed;save();render();}));
+  const sr=document.getElementById('save-risk');
+  if(sr)sr.addEventListener('click',()=>{const txt=document.getElementById('new-risk-text')?.value?.trim();if(!txt)return;S.risks.push({text:txt,severity:document.getElementById('new-risk-sev')?.value||'medium',phase:document.getElementById('new-risk-phase')?.value||'',mitigation:document.getElementById('new-risk-mit')?.value||'',resolved:false});S.forms['add-risk']=false;save();render();});
+  document.querySelectorAll('[data-resolve-risk]').forEach(b=>b.addEventListener('click',()=>{S.risks[+b.dataset.resolveRisk].resolved=true;save();render();}));
+  document.querySelectorAll('[data-del-risk]').forEach(b=>b.addEventListener('click',()=>{S.risks.splice(+b.dataset.delRisk,1);save();render();}));
+  document.querySelectorAll('[data-note-tab]').forEach(b=>b.addEventListener('click',()=>{S.notesTab=b.dataset.noteTab==='general'?null:b.dataset.noteTab;render();}));
+  const sn=document.getElementById('save-note');
+  if(sn)sn.addEventListener('click',()=>{S.notes['note:'+(S.notesTab||'general')]=document.getElementById('note-area')?.value||'';save();sn.textContent='Saved ✓';setTimeout(()=>{try{sn.textContent='Save'}catch(e){}},1200);});
+  document.querySelectorAll('[data-tl-start]').forEach(inp=>inp.addEventListener('change',()=>{const item=S.tl.find(i=>i.id===inp.dataset.tlStart);if(item){item.start=inp.value;save();render();}}));
+  document.querySelectorAll('[data-tl-end]').forEach(inp=>inp.addEventListener('change',()=>{const item=S.tl.find(i=>i.id===inp.dataset.tlEnd);if(item){item.end=inp.value;save();render();}}));
+  document.querySelectorAll('[data-del-tl]').forEach(b=>b.addEventListener('click',()=>{S.tl=S.tl.filter(i=>i.id!==b.dataset.delTl);save();render();}));
+  const onm=document.getElementById('open-nm');if(onm)onm.addEventListener('click',()=>{S.addMilestone=true;render();});
+  const cnm=document.getElementById('cancel-nm');if(cnm)cnm.addEventListener('click',()=>{S.addMilestone=false;render();});
+  const snm=document.getElementById('save-nm');
+  if(snm)snm.addEventListener('click',()=>{
+    const label=document.getElementById('nm-label')?.value?.trim();
+    const start=document.getElementById('nm-start')?.value;
+    if(!label||!start)return;
+    S.tl.push({id:'tl-custom-'+Date.now(),type:document.getElementById('nm-type')?.value||'milestone',label,phaseId:document.getElementById('nm-phase')?.value||null,start,end:document.getElementById('nm-end')?.value||null,color:document.getElementById('nm-color')?.value||'#534AB7'});
+    S.addMilestone=false;save();render();
+  });
+}
+
+render();
+</script>
+</body>
+</html>
