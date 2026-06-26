@@ -86,7 +86,6 @@
   .comms-row { padding: 9px 0; border-bottom: 0.5px solid var(--border); display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
   .comms-row:last-child { border-bottom: none; }
   .note-area { width: 100%; min-height: 140px; font-size: 13px; line-height: 1.6; resize: vertical; padding: 8px 10px; }
-  /* Timeline */
   .tl-wrap { overflow-x: auto; margin-bottom: 16px; }
   .tl-table { min-width: 580px; width: 100%; border-collapse: collapse; }
   .tl-label-col { font-size: 12px; color: var(--text); padding: 6px 8px 6px 0; white-space: nowrap; width: 110px; vertical-align: middle; }
@@ -106,6 +105,9 @@
   .edit-table input[type=date] { padding: 4px 6px; font-size: 12px; }
   .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px 4px; }
   .del-btn:hover { color: #c0392b; }
+  .ws-card { display:flex; flex-direction:column; gap:4px; padding:10px 14px; border-radius:var(--radius); border:0.5px solid var(--border); background:var(--bg3); cursor:pointer; min-width:140px; text-align:left; box-shadow:var(--shadow); transition:border-color .15s; }
+  .ws-card:hover { border-color: var(--border2); }
+  .ws-card.active { border-width: 1.5px; }
   @media (max-width: 600px) {
     .metrics-row { grid-template-columns: repeat(2, 1fr); }
     .two-col { grid-template-columns: 1fr; }
@@ -184,7 +186,7 @@ const PHASE_CHECKS={
     {id:'t0-monitor',label:'T+1 day monitoring complete — zero Sev-1s',group:'Tranche 0'},
     {id:'t0-gonogo',label:'Go/no-go decision for Tranche 1 made',group:'Tranche 0'},
     {id:'t1-deploy',label:'Tranche 1 deployed (~5-10% stores)',group:'Ramp'},
-    {id:'t1-gonogo',label:'Tranche 1 go/no-go passed (≥95% success)',group:'Ramp'},
+    {id:'t1-gonogo',label:'Tranche 1 go/no-go passed (>=95% success)',group:'Ramp'},
     {id:'t2-deploy',label:'Tranche 2 deployed (~25%)',group:'Ramp'},
     {id:'t2-gonogo',label:'Tranche 2 go/no-go passed',group:'Ramp'},
     {id:'t3-deploy',label:'Tranche 3 deployed (~50%)',group:'Ramp'},
@@ -194,7 +196,7 @@ const PHASE_CHECKS={
   ],
   comms:[
     {id:'runbook',label:'CS support runbook drafted and reviewed',group:'Internal'},
-    {id:'cs-training',label:'CS training / enablement complete',group:'Internal'},
+    {id:'cs-tr',label:'CS training / enablement complete',group:'Internal'},
     {id:'int-rn',label:'Internal release notes (Confluence)',group:'Internal'},
     {id:'slack-ann',label:'Internal Slack announcement sent',group:'Internal'},
     {id:'ext-rn',label:'External release notes (Zendesk)',group:'External'},
@@ -213,6 +215,38 @@ const PHASE_CHECKS={
   ],
 };
 
+const WORKSTREAMS=[
+  {id:'order-flow',label:'Order Flow',lead:'Marc McCoy',color:'#0F6E56'},
+  {id:'paytronix-oo',label:'Paytronix OO',lead:'Saffan Momin',color:'#185FA5'},
+  {id:'cfd-loyalty',label:'CFD Loyalty',lead:'Carlos',color:'#534AB7'},
+  {id:'brand-coupon',label:'Brand Coupon POS',lead:'Matthew Do',color:'#854F0B'},
+];
+
+const ICPM_CHECKS=[
+  {id:'prob-synthesis',label:'Top 3 problems synthesized for this initiative',group:'Quarterly Setup'},
+  {id:'outcome-okrs',label:'Outcome-based OKRs set (adoption/revenue metrics, not ship dates)',group:'Quarterly Setup'},
+  {id:'raci',label:'RACI defined for cross-functional team',group:'Quarterly Setup'},
+  {id:'disc-interviews',label:'3-5 operator discovery interviews completed',group:'Pre-Spec Discovery'},
+  {id:'research-synthesis',label:'Interview notes synthesized into themes',group:'Pre-Spec Discovery'},
+  {id:'demand-validated',label:'Demand validated — 10X better value confirmed',group:'Pre-Spec Discovery'},
+  {id:'build-doc-written',label:'Build doc written and reviewed by eng lead',group:'Pre-Spec Discovery'},
+  {id:'spec-written',label:'Spec / PRD written after (not before) discovery',group:'Pre-Spec Discovery'},
+  {id:'delivery-plan-cf',label:'Confluence delivery plan page created',group:'During Dev'},
+  {id:'uat-owned',label:'PM owns UAT — test cases written, executed, signed off',group:'During Dev'},
+  {id:'pilot-designed',label:'Pilot designed: stores, metrics, pricing',group:'During Dev'},
+  {id:'gtm-started',label:'GTM assets started during dev (not after)',group:'During Dev'},
+  {id:'pilot-feedback',label:'Pilot to feedback loop to go/no-go completed',group:'Release'},
+  {id:'internal-rn-done',label:'Internal release notes published (Confluence)',group:'Release'},
+  {id:'zendesk-rn-done',label:'External release notes published (Zendesk)',group:'Release'},
+  {id:'evangelism',label:'Internal evangelism sent — Slack + leadership comms',group:'Release'},
+  {id:'monthly-review',label:'30-min monthly review scheduled: adoption, activation, revenue',group:'Post-Launch'},
+  {id:'productplan-updated',label:'ProductPlan lanes updated',group:'Post-Launch'},
+  {id:'jira-weekly',label:'Weekly Jira triage: FRs, escalations, sprint health',group:'Weekly Ops'},
+  {id:'okr-page-updated',label:'OKR page updated with current status',group:'Weekly Ops'},
+  {id:'qbr-outcome',label:'QBR completed — outcome vs. shipped, not just shipped',group:'EOQ'},
+  {id:'eoq-sweep',label:'EOQ sweep — carry-forward items identified',group:'EOQ'},
+];
+
 const DEFAULT_TL=[
   {id:'tl-discovery',type:'phase',phaseId:'discovery',label:'Discovery',start:'2026-03-17',end:'2026-04-04',color:'#534AB7'},
   {id:'tl-planning',type:'phase',phaseId:'planning',label:'Planning',start:'2026-04-07',end:'2026-04-25',color:'#185FA5'},
@@ -225,15 +259,20 @@ const DEFAULT_TL=[
   {id:'tl-demo',type:'milestone',phaseId:'development',label:'Loyalty demo',start:'2026-06-17',color:'#854F0B'},
 ];
 
-function dflt(){return{tab:'overview',activePhase:'development',checks:{},decisions:[],risks:[],notes:{},forms:{},notesTab:null,tl:DEFAULT_TL,addMilestone:false,nm:{label:'',type:'milestone',phaseId:'development',start:'',end:'',color:'#534AB7'}};}
+function dflt(){return{tab:'overview',activePhase:'development',activeWs:'order-flow',checks:{},decisions:[],risks:[],notes:{},forms:{},notesTab:null,jiraStatus:{},jiraLoading:false,jiraError:null,tl:DEFAULT_TL,addMilestone:false,nm:{label:'',type:'milestone',phaseId:'development',start:'',end:'',color:'#534AB7'}};}
 
 let S;
-try{const sv=localStorage.getItem('pmcc_v1');S=sv?{...dflt(),...JSON.parse(sv),tl:JSON.parse(sv).tl||DEFAULT_TL}:dflt();}catch(e){S=dflt();}
+try{const sv=localStorage.getItem('pmcc_v2');S=sv?{...dflt(),...JSON.parse(sv),tl:JSON.parse(sv).tl||DEFAULT_TL}:dflt();}catch(e){S=dflt();}
 
-function save(){try{localStorage.setItem('pmcc_v1',JSON.stringify({checks:S.checks,decisions:S.decisions,risks:S.risks,notes:S.notes,tl:S.tl,activePhase:S.activePhase}));}catch(e){}}
+function save(){try{localStorage.setItem('pmcc_v2',JSON.stringify({checks:S.checks,decisions:S.decisions,risks:S.risks,notes:S.notes,tl:S.tl,activePhase:S.activePhase,activeWs:S.activeWs}));}catch(e){}}
+function getCfg(){try{return JSON.parse(localStorage.getItem('pmcc_cfg')||'{}');}catch(e){return{};}}
+function saveCfg(obj){localStorage.setItem('pmcc_cfg',JSON.stringify({...getCfg(),...obj}));}
+function getToken(){return getCfg().jiraToken||'';}
+function getTeamsWebhook(){return getCfg().teamsWebhook||'';}
 
 function phProg(pid){const c=PHASE_CHECKS[pid]||[];if(!c.length)return 0;return Math.round(c.filter(x=>S.checks[pid+':'+x.id]).length/c.length*100);}
 function overall(){let t=0,d=0;PHASES.forEach(p=>{const c=PHASE_CHECKS[p.id]||[];t+=c.length;d+=c.filter(x=>S.checks[p.id+':'+x.id]).length;});return t?Math.round(d/t*100):0;}
+function wsProg(wid){const done=ICPM_CHECKS.filter(c=>S.checks['ws:'+wid+':'+c.id]).length;return{done,total:ICPM_CHECKS.length,pct:Math.round(done/ICPM_CHECKS.length*100)};}
 
 function render(){document.getElementById('root').innerHTML=app();bind();}
 
@@ -241,20 +280,23 @@ function app(){return`
 <div class="topbar">
   <div><h1>POS Q2 Command Center</h1><p>Q2 2026 · GA target Jun 26 · ${overall()}% complete</p></div>
   <div class="topbar-actions">
-    <button class="btn">Weekly status</button>
-    <button class="btn">Q3 carry-forward</button>
+    <button class="btn" id="btn-weekly-status">Weekly status</button>
+    <button class="btn" id="btn-q3">Q3 carry-forward</button>
+    <button class="btn" id="btn-refresh-jira" title="Refresh Jira data">&#8635; Jira</button>
   </div>
 </div>
 <div class="nav">
-  ${['overview','timeline','lifecycle','decisions','risks','comms','notes'].map(t=>`<button class="nav-btn${S.tab===t?' active':''}" data-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+  ${['overview','timeline','lifecycle','projects','decisions','risks','comms','notes','settings'].map(t=>`<button class="nav-btn${S.tab===t?' active':''}" data-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
 </div>
 ${S.tab==='overview'?tabOverview():''}
 ${S.tab==='timeline'?tabTimeline():''}
 ${S.tab==='lifecycle'?tabLifecycle():''}
+${S.tab==='projects'?tabProjects():''}
 ${S.tab==='decisions'?tabDecisions():''}
 ${S.tab==='risks'?tabRisks():''}
 ${S.tab==='comms'?tabComms():''}
 ${S.tab==='notes'?tabNotes():''}
+${S.tab==='settings'?tabSettings():''}
 `;}
 
 function phaseStrip(clickAttr){return`<div class="phase-strip">${PHASES.map(p=>{const prog=phProg(p.id);const cur=p.id===S.activePhase;return`<div class="phase-chip${cur?' active':''}" style="${cur?`border-color:${p.color};`:''}" ${clickAttr}="${p.id}"><div class="pc-icon"><i class="fa-solid ${p.icon}" style="color:${cur?p.color:'var(--text3)'}"></i></div><div class="pc-label" style="${cur?`color:${p.color};`:''}">${p.label}</div><div class="pc-prog">${prog}%</div><div class="pbar-wrap"><div class="pbar" style="width:${prog}%;background:${p.color}"></div></div></div>`;}).join('')}</div>`;}
@@ -383,6 +425,58 @@ function tabLifecycle(){
     return`<div class="section"><div class="section-title"><span>${grp}</span><span style="font-weight:400">${done}/${items.length}</span></div><div class="card" style="padding:4px 14px">${items.map(c=>{const key=S.activePhase+':'+c.id;const chk=!!S.checks[key];return`<div class="checklist-item"><button class="cb${chk?' checked':''}" data-toggle="${key}">${chk?'✓':''}</button><div class="ci-text${chk?' done':''}">${c.label}</div></div>`;}).join('')}</div></div>`;
   }).join('')}`;}
 
+function tabProjects(){
+  const grpColors={'Quarterly Setup':'b-purple','Pre-Spec Discovery':'b-blue','During Dev':'b-teal','Release':'b-amber','Post-Launch':'b-green','Weekly Ops':'b-gray','EOQ':'b-gray'};
+  const ws=WORKSTREAMS.find(w=>w.id===S.activeWs)||WORKSTREAMS[0];
+  const p=wsProg(ws.id);
+  const groups=[...new Set(ICPM_CHECKS.map(c=>c.group))];
+  return`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+    ${WORKSTREAMS.map(w=>{
+      const wp=wsProg(w.id);
+      const isActive=w.id===S.activeWs;
+      return`<button class="ws-card${isActive?' active':''}" style="${isActive?`border-color:${w.color};`:''}background:${isActive?'var(--bg3)':'var(--bg3)'}" data-sel-ws="${w.id}">
+        <div style="font-size:12px;font-weight:600;color:${isActive?w.color:'var(--text)'}">${w.label}</div>
+        <div style="font-size:11px;color:var(--text2)">${w.lead}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">${wp.pct}% · ${wp.done}/${wp.total}</div>
+        <div class="pbar-wrap" style="margin-top:5px"><div class="pbar" style="width:${wp.pct}%;background:${w.color}"></div></div>
+      </button>`;
+    }).join('')}
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:16px;font-weight:600;color:${ws.color}">${ws.label}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Lead: ${ws.lead} &nbsp;·&nbsp; ${p.done}/${p.total} complete &nbsp;·&nbsp; ${p.pct}%</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn" onclick="sendPrompt('/delivery-plan')">Delivery plan</button>
+      <button class="btn" onclick="sendPrompt('/pilot-checklist')">Pilot checklist</button>
+      <button class="btn" onclick="sendPrompt('/release-notes')">Release notes</button>
+    </div>
+  </div>
+  ${(()=>{
+    const j=S.jiraStatus[ws.id];
+    if(S.jiraLoading) return '<div class="card" style="padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--text2)">Loading Jira data...</div>';
+    if(S.jiraError) return '<div class="card" style="padding:12px 16px;margin-bottom:12px;font-size:12px;color:#c0392b">Jira error: '+S.jiraError+' — check token in Settings</div>';
+    if(!j) return '<div class="card" style="padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:var(--text2)">No Jira data loaded yet</span><button class="btn" onclick="refreshJira()" style="font-size:11px">Load from Jira</button></div>';
+    const statusCounts=Object.entries(j.byStatus).map(([s,n])=>'<span class="badge b-gray" style="margin-right:4px">'+s+': '+n+'</span>').join('');
+    return '<div class="card" style="padding:12px 16px;margin-bottom:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Live Jira</div><div style="font-size:10px;color:var(--text3)">Updated '+j.lastRefresh+'</div></div><div style="display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap"><div style="text-align:center"><div style="font-size:18px;font-weight:600">'+j.inProgress+'</div><div style="font-size:10px;color:var(--text2)">In dev</div></div><div style="text-align:center"><div style="font-size:18px;font-weight:600;color:#3a6b10">'+j.done+'</div><div style="font-size:10px;color:var(--text2)">Done</div></div><div style="text-align:center"><div style="font-size:18px;font-weight:600">'+j.total+'</div><div style="font-size:10px;color:var(--text2)">Total</div></div>'+( j.blocked?'<div style="text-align:center"><div style="font-size:18px;font-weight:600;color:#c0392b">'+j.blocked+'</div><div style="font-size:10px;color:var(--text2)">Blocked</div></div>':'' )+'</div><div style="flex-wrap:wrap;display:flex;gap:4px">'+statusCounts+'</div></div>';
+  })()}
+  ${groups.map(grp=>{
+    const items=ICPM_CHECKS.filter(c=>c.group===grp);
+    const done=items.filter(c=>S.checks['ws:'+ws.id+':'+c.id]).length;
+    return`<div class="section">
+      <div class="section-title">
+        <span style="display:flex;align-items:center;gap:6px"><span class="badge ${grpColors[grp]||'b-gray'}">${grp}</span></span>
+        <span style="font-weight:400">${done}/${items.length}</span>
+      </div>
+      <div class="card" style="padding:4px 14px">
+        ${items.map(c=>{const key='ws:'+ws.id+':'+c.id;const chk=!!S.checks[key];return`<div class="checklist-item"><button class="cb${chk?' checked':''}" data-toggle="${key}">${chk?'✓':''}</button><div class="ci-text${chk?' done':''}">${c.label}</div></div>`;}).join('')}
+      </div>
+    </div>`;
+  }).join('')}
+  <button class="btn" style="font-size:11px;color:var(--text2);margin-top:4px" data-reset-ws="${ws.id}">Reset ${ws.label} checklist</button>`;}
+
 function tabDecisions(){
   const groups=[{k:'decision',l:'Decisions',b:'b-blue'},{k:'assumption',l:'Assumptions',b:'b-purple'},{k:'action',l:'Action items',b:'b-amber'}];
   return`<div class="section">${groups.map(g=>{
@@ -435,7 +529,7 @@ function tabNotes(){
   const tabs=[{id:'general',l:'General'},...PHASES.map(p=>({id:p.id,l:p.label}))];
   return`<div class="section">
     <div class="tab-row">${tabs.map(t=>`<button class="tab-btn${active===t.id?' active':''}" data-note-tab="${t.id}">${t.l}</button>`).join('')}</div>
-    <textarea class="note-area" id="note-area" placeholder="Running notes, meeting minutes, open questions, links…">${note}</textarea>
+    <textarea class="note-area" id="note-area" placeholder="Running notes, meeting minutes, open questions, links...">${note}</textarea>
     <div style="display:flex;gap:6px;margin-top:8px">
       <button class="btn primary" id="save-note">Save</button>
     </div>
@@ -475,6 +569,208 @@ function bind(){
     S.tl.push({id:'tl-custom-'+Date.now(),type:document.getElementById('nm-type')?.value||'milestone',label,phaseId:document.getElementById('nm-phase')?.value||null,start,end:document.getElementById('nm-end')?.value||null,color:document.getElementById('nm-color')?.value||'#534AB7'});
     S.addMilestone=false;save();render();
   });
+  document.querySelectorAll('[data-sel-ws]').forEach(b=>b.addEventListener('click',()=>{S.activeWs=b.dataset.selWs;save();render();}));
+  document.querySelectorAll('[data-reset-ws]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Reset all checklist items for this workstream?'))return;
+    const wsId=b.dataset.resetWs;
+    ICPM_CHECKS.forEach(c=>{delete S.checks['ws:'+wsId+':'+c.id];});
+    save();render();
+  }));
+
+  const bws = document.getElementById('btn-weekly-status');
+  if(bws) bws.addEventListener('click', () => copyToTeams(buildWeeklyStatus()));
+  const bq3 = document.getElementById('btn-q3');
+  if(bq3) bq3.addEventListener('click', () => copyToTeams(buildQ3CarryForward()));
+  const brj = document.getElementById('btn-refresh-jira');
+  if(brj) brj.addEventListener('click', () => refreshJira());
+
+  const scfg = document.getElementById('save-cfg');
+  if(scfg) scfg.addEventListener('click', () => {
+    saveCfg({
+      jiraToken: document.getElementById('cfg-token')?.value?.trim(),
+      jiraEmail: document.getElementById('cfg-email')?.value?.trim(),
+      teamsWebhook: document.getElementById('cfg-teams')?.value?.trim(),
+    });
+    document.getElementById('cfg-status').textContent = 'Saved.';
+    setTimeout(()=>render(), 800);
+  });
+
+  const tjira = document.getElementById('test-jira');
+  if(tjira) tjira.addEventListener('click', async () => {
+    const el = document.getElementById('cfg-status');
+    el.textContent = 'Testing...';
+    const token = document.getElementById('cfg-token')?.value?.trim();
+    const email = document.getElementById('cfg-email')?.value?.trim() || 'ruth.andrade@hungerrush.com';
+    if(!token){el.textContent='Paste a token first.';return;}
+    try {
+      const r = await fetch(JIRA_BASE+'/myself', {headers:{'Authorization':'Basic '+btoa(email+':'+token),'Accept':'application/json'}});
+      if(r.ok){const d=await r.json();el.style.color='#3a6b10';el.textContent='Connected as '+d.displayName;}
+      else{el.style.color='#c0392b';el.textContent='Failed ('+r.status+') — check token and email';}
+    } catch(e){el.style.color='#c0392b';el.textContent='Network error: '+e.message;}
+  });
+}
+
+
+// ── Jira integration ──────────────────────────────────────────────────────
+const JIRA_CLOUD = '31a7b6a2-9c9d-49aa-b315-992b81e73691';
+const JIRA_BASE = 'https://api.atlassian.com/ex/jira/' + JIRA_CLOUD + '/rest/api/3';
+
+const WS_EPICS = {
+  'order-flow':    ['POS-5646','POS-5780'],
+  'paytronix-oo':  ['POS-5869','POS-5841'],
+  'cfd-loyalty':   ['POS-5572','POS-5573','POS-5574','POS-5575','POS-5571'],
+  'brand-coupon':  ['POS-5600','POS-6076'],
+};
+
+async function fetchJiraEpic(token, key) {
+  const jql = encodeURIComponent(`"Epic Link" = ${key} OR parent = ${key} ORDER BY updated DESC`);
+  const fields = 'summary,status,assignee,issuetype';
+  const url = `${JIRA_BASE}/search?jql=${jql}&fields=${fields}&maxResults=50`;
+  const r = await fetch(url, {
+    headers: {
+      'Authorization': 'Basic ' + btoa((getCfg().jiraEmail||'ruth.andrade@hungerrush.com') + ':' + token),
+      'Accept': 'application/json'
+    }
+  });
+  if (!r.ok) throw new Error('Jira ' + r.status);
+  const d = await r.json();
+  return d.issues || [];
+}
+
+async function refreshJira() {
+  const token = getToken();
+  if (!token) { alert('Add your Jira API token in Settings first.'); S.tab='settings'; render(); return; }
+  S.jiraLoading = true; S.jiraError = null; render();
+  try {
+    const results = {};
+    for (const [wsId, epics] of Object.entries(WS_EPICS)) {
+      const allIssues = [];
+      for (const epic of epics) {
+        const issues = await fetchJiraEpic(token, epic);
+        allIssues.push(...issues);
+      }
+      const byStatus = {};
+      allIssues.forEach(i => {
+        const st = i.fields.status.name;
+        byStatus[st] = (byStatus[st]||0) + 1;
+      });
+      const inProg = allIssues.filter(i => i.fields.status.name.toLowerCase().includes('progress') || i.fields.status.name.toLowerCase().includes('develop'));
+      const done = allIssues.filter(i => i.fields.status.name.toLowerCase().includes('done') || i.fields.status.name.toLowerCase().includes('merge'));
+      const blocked = allIssues.filter(i => (i.fields.labels||[]).includes('blocked'));
+      results[wsId] = { total: allIssues.length, inProgress: inProg.length, done: done.length, blocked: blocked.length, byStatus, lastRefresh: new Date().toLocaleTimeString(), issues: allIssues.slice(0,8) };
+    }
+    S.jiraStatus = results;
+  } catch(e) {
+    S.jiraError = e.message;
+  }
+  S.jiraLoading = false; render();
+}
+
+// ── Teams / clipboard ─────────────────────────────────────────────────────
+function buildWeeklyStatus() {
+  const lines = [];
+  lines.push('📊 POS Modernization — Weekly Status ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}));
+  lines.push('');
+  WORKSTREAMS.forEach(ws => {
+    const p = wsProg(ws.id);
+    const j = S.jiraStatus[ws.id];
+    let line = `${ws.label} (${ws.lead}) — ICPM ${p.pct}%`;
+    if (j) line += ` · ${j.inProgress} in dev · ${j.done} done · ${j.total} total`;
+    lines.push('• ' + line);
+  });
+  lines.push('');
+  const highRisks = S.risks.filter(r=>!r.resolved&&r.severity==='high');
+  if (highRisks.length) { lines.push('🔴 High risks: ' + highRisks.map(r=>r.text).join(' | ')); }
+  const openActions = S.decisions.filter(d=>d.type==='action'&&!d.closed);
+  if (openActions.length) { lines.push('⚡ Open actions: ' + openActions.length); }
+  lines.push('');
+  lines.push(`GA target: Jun 26, 2026 · Overall ${overall()}% complete`);
+  return lines.join('\n');
+}
+
+function buildQ3CarryForward() {
+  const lines = [];
+  lines.push('📋 Q3 Carry-Forward — POS Modernization');
+  lines.push('EOQ sweep as of ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}));
+  lines.push('');
+  WORKSTREAMS.forEach(ws => {
+    const p = wsProg(ws.id);
+    const incomplete = ICPM_CHECKS.filter(c => !S.checks['ws:'+ws.id+':'+c.id]);
+    if (incomplete.length > 0) {
+      lines.push(`${ws.label} — ${incomplete.length} items incomplete:`);
+      incomplete.slice(0,5).forEach(c => lines.push('  • ' + c.label));
+      if (incomplete.length > 5) lines.push('  • ... and ' + (incomplete.length-5) + ' more');
+      lines.push('');
+    }
+  });
+  const openRisks = S.risks.filter(r=>!r.resolved);
+  if (openRisks.length) { lines.push('Open risks carrying forward: ' + openRisks.length); }
+  return lines.join('\n');
+}
+
+function copyToTeams(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    let t = document.getElementById('sp-toast');
+    if (!t) { t = document.createElement('div'); t.id='sp-toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1916;color:#fff;padding:10px 18px;border-radius:6px;font-size:12px;z-index:9999;pointer-events:none;transition:opacity .3s'; document.body.appendChild(t); }
+    t.textContent = 'Copied — paste into Teams';
+    t.style.opacity = '1';
+    clearTimeout(t._tid); t._tid = setTimeout(() => { t.style.opacity='0'; }, 2500);
+  }).catch(() => { prompt('Copy this:', text); });
+}
+
+// ── Settings tab ──────────────────────────────────────────────────────────
+function tabSettings() {
+  const cfg = getCfg();
+  const hasToken = !!cfg.jiraToken;
+  return `<div class="section">
+    <div class="section-title">Configuration</div>
+    <div class="card" style="padding:16px">
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px">Jira API Token</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Get yours at: <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" style="color:#185FA5">id.atlassian.com → Security → API tokens</a></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="cfg-token" type="password" placeholder="Paste Jira API token here" value="${cfg.jiraToken||''}" style="flex:1">
+          ${hasToken?'<span class="badge b-green">Token saved</span>':'<span class="badge b-gray">Not set</span>'}
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px">Jira Email</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">The email address for your Atlassian account</div>
+        <input id="cfg-email" type="email" placeholder="your.email@hungerrush.com" value="${cfg.jiraEmail||'ruth.andrade@hungerrush.com'}" style="width:100%">
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px">Microsoft Teams Webhook <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">If available: Teams channel → ... → Connectors → Incoming Webhook. Otherwise weekly status copies to clipboard.</div>
+        <input id="cfg-teams" type="url" placeholder="https://hungerrush.webhook.office.com/..." value="${cfg.teamsWebhook||''}" style="width:100%">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" id="save-cfg">Save settings</button>
+        <button class="btn" id="test-jira">Test Jira connection</button>
+      </div>
+      <div id="cfg-status" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
+    </div>
+    <div class="card" style="padding:16px;margin-top:8px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Epic mapping</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Jira epics being tracked per workstream</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        ${Object.entries(WS_EPICS).map(([wsId, epics]) => {
+          const ws = WORKSTREAMS.find(w=>w.id===wsId);
+          return '<tr style="border-bottom:.5px solid var(--border)"><td style="padding:6px 0;font-weight:500;color:'+ws.color+'">'+ws.label+'</td><td style="padding:6px 0;color:var(--text2)">'+epics.join(', ')+'</td></tr>';
+        }).join('')}
+      </table>
+    </div>
+  </div>`;
+}
+
+function sendPrompt(text){
+  if(typeof window.sendPrompt==='function'&&window.sendPrompt!==sendPrompt){window.sendPrompt(text);return;}
+  navigator.clipboard.writeText(text).then(()=>{
+    let t=document.getElementById('sp-toast');
+    if(!t){t=document.createElement('div');t.id='sp-toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1916;color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;z-index:9999;pointer-events:none;transition:opacity .3s';document.body.appendChild(t);}
+    t.textContent='Copied to clipboard — paste into Claude chat';
+    t.style.opacity='1';
+    clearTimeout(t._tid);t._tid=setTimeout(()=>{t.style.opacity='0';},2500);
+  }).catch(()=>{prompt('Copy and paste this into Claude:',text);});
 }
 
 render();
